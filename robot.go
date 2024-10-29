@@ -65,7 +65,14 @@ func (bot *robot) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	bot.event = evt
 	endpoints := bot.configmap.GetEndpoints(*evt.Org, *evt.Repo, *evt.EventType)
+	if len(endpoints) == 0 {
+		return
+	}
 	bot.dispatcher(&r.Header, endpoints)
+}
+
+func (bot *robot) Wait() {
+	bot.wg.Wait() // Handle remaining requests
 }
 
 func (bot *robot) dispatcher(h *http.Header, endpoints []string) {
@@ -75,7 +82,7 @@ func (bot *robot) dispatcher(h *http.Header, endpoints []string) {
 
 		req := bot.client.R()
 		req.Header = *h
-		req.Body = bot.event.MetaPayload
+		req.Body = bot.event.MetaPayload.Bytes()
 
 		bot.wg.Add(1)
 		go func(urlStr string) {
