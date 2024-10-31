@@ -1,4 +1,4 @@
-// Copyright 2024 Chao Feng
+// Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,77 +16,35 @@ package main
 import (
 	"flag"
 	"github.com/opensourceways/robot-framework-lib/config"
+	"github.com/opensourceways/robot-framework-lib/framework"
 	"github.com/opensourceways/server-common-lib/interrupts"
 	"github.com/opensourceways/server-common-lib/logrusutil"
-	"github.com/opensourceways/server-common-lib/options"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strconv"
 )
 
-type robotOptions struct {
-	service       options.ServiceOptions
-	handlePath    string
-	componentName string
-	shutdown      bool
-}
-
-func (o *robotOptions) gatherOptions(fs *flag.FlagSet, args ...string) *configuration {
-
-	o.service.AddFlags(fs)
-	fs.StringVar(
-		&o.handlePath, "handle-path", "webhook",
-		"http server handle interface path",
-	)
-	fs.StringVar(
-		&o.handlePath, "component-name", "robot-generic-access",
-		"logging field to flag project",
-	)
-
-	_ = fs.Parse(args)
-
-	if err := o.service.Validate(); err != nil {
-		logrus.Errorf("invalid service options, err:%s", err.Error())
-		o.shutdown = true
-	}
-	configmap := config.NewConfigmapAgent(&configuration{})
-	if err := configmap.Load(o.service.ConfigFile); err != nil {
-		logrus.Errorf("load config, err:%s", err.Error())
-		return nil
-	}
-
-	return configmap.GetConfigmap().(*configuration)
-}
+const component = "robot-universal-access"
 
 func main() {
-	os.Args = append(os.Args,
-		"--port=8888",
-		"--config-file=D:\\Project\\github\\opensourceways\\robot-common\\robot-generic-access\\testdata\\config.yaml",
-		"--component-name=robot-gitcode-access",
-		"--handle-path=gitcode-hook",
-	)
+	logrusutil.ComponentInit(component)
+
 	opt := new(robotOptions)
 	cfg := opt.gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 	if opt.shutdown {
 		return
 	}
-	logrusutil.ComponentInit(opt.componentName)
 
 	bot := newRobot(cfg)
-	startup(bot, opt)
-}
-
-func startup(d *robot, o *robotOptions) {
-	defer interrupts.WaitForGracefulShutdown()
+	interrupts.OnInterrupt(func() {
+		bot.Wait()
+	})
 
 	// Return 200 on / for health checks.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
-
 	// For /**-hook, handle a webhook normally.
-	http.Handle("/"+o.handlePath, d)
+	http.Handle("/"+opt.handlePath, bot)
+	httpServer := &http.Server{Addr: ":" + strconv.Itoa(opt.service.Port)}
 
-	httpServer := &http.Server{Addr: ":" + strconv.Itoa(o.service.Port)}
-
-	interrupts.ListenAndServe(httpServer, o.service.GracePeriod)
+	framework.StartupServer(httpServer, opt.service, config.ServerAdditionOptions{})
 }

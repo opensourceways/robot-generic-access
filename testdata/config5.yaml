@@ -1,0 +1,17 @@
+access:
+  repo_plugins:
+    owner:
+      - serv1
+
+  plugins:
+    - name: serv1
+      endpoint: http://localhost:7001/gitcode-hook
+      events:
+        - "Merge Request Hook"
+        - "Issue Hook"
+        - "Note Hook"
+        - "Push Hook"
+
+    - name: serv2
+      endpoint:
+      events:

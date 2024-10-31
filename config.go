@@ -1,4 +1,4 @@
-// Copyright 2024 Chao Feng
+// Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/set"
+	"net/url"
 	"slices"
 )
 
@@ -48,7 +50,7 @@ type pluginConfig struct {
 }
 
 func (a *accessConfig) validate() error {
-	var botSet = sets.String{}
+	var botSet = set.Set[string]{}
 	for i := range a.Plugins {
 		if err := a.Plugins[i].validate(); err != nil {
 			return err
@@ -66,34 +68,51 @@ func (a *accessConfig) validate() error {
 	}
 
 	if len(e) > 0 {
-		return fmt.Errorf("config.yaml existed unknown plugins: %v", e)
+		return fmt.Errorf("repo_plugins %v missing plugins in the configmap", e)
 	}
 
 	return nil
 }
 
-func (c *configuration) GetEndpoints(org, repo, eventType string) (ans []string) {
-
-	if c.ConfigItems.RepoPlugins == nil {
-		return []string{}
+func (p *pluginConfig) validate() error {
+	if p.Name == "" {
+		return errors.New("plugin missing name")
 	}
 
-	var robotNames []string
+	if p.Endpoint == "" {
+		return errors.New(p.Name + " plugin missing endpoint")
+	}
+
+	if _, err := url.ParseRequestURI(p.Endpoint); err != nil {
+		return errors.New(p.Endpoint + " not a valid url")
+	}
+
+	return nil
+}
+
+func (c *configuration) GetEndpoints(org, repo, eventType string) []string {
+	var ans []string
+
+	if c.ConfigItems.RepoPlugins == nil {
+		return ans
+	}
+
+	var servers []string
 	endpoint, ok := c.ConfigItems.RepoPlugins[org]
 	if ok {
-		robotNames = append(robotNames, endpoint...)
+		servers = append(servers, endpoint...)
 	}
 
 	endpoint, ok = c.ConfigItems.RepoPlugins[org+"/"+repo]
 	if ok {
-		robotNames = append(robotNames, endpoint...)
+		servers = append(servers, endpoint...)
 	}
 
-	if len(c.ConfigItems.Plugins) != 0 && len(robotNames) != 0 {
-		ans = matchEndpoint(&c.ConfigItems.Plugins, eventType, robotNames...)
+	if len(c.ConfigItems.Plugins) != 0 && len(servers) != 0 {
+		ans = matchEndpoint(&c.ConfigItems.Plugins, eventType, servers...)
 	}
 
-	return
+	return ans
 }
 
 func matchEndpoint(m *[]pluginConfig, event string, robotNames ...string) (ans []string) {
@@ -106,17 +125,4 @@ func matchEndpoint(m *[]pluginConfig, event string, robotNames ...string) (ans [
 	}
 
 	return
-}
-
-func (p *pluginConfig) validate() error {
-	if p.Name == "" {
-		return fmt.Errorf("missing name")
-	}
-
-	if p.Endpoint == "" {
-		return fmt.Errorf("missing endpoint")
-	}
-
-	// p.Endpoint unchecked
-	return nil
 }

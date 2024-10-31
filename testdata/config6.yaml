@@ -1,6 +1,8 @@
 access:
   repo_plugins:
-    ibforuorg/test1: # 可以指定社区
+    org1:
+      - service-name2
+    ibforuorg/test1:
       - service-name1
       - service-name2
 
@@ -18,4 +20,3 @@ access:
         - "Merge Request Hook"
         - "Issue Hook"
         - "Note Hook"
-        - "Push Hook"
