@@ -41,7 +41,9 @@ func main() {
 	})
 
 	// Return 200 on / for health checks.
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	})
 	// For /**-hook, handle a webhook normally.
 	http.Handle("/"+opt.handlePath, bot)
 	httpServer := &http.Server{Addr: ":" + strconv.Itoa(opt.service.Port)}

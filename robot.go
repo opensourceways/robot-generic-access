@@ -68,7 +68,9 @@ func (bot *robot) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(endpoints) == 0 {
 		return
 	}
-	bot.dispatcher(&r.Header, endpoints)
+
+	bot.wg.Add(1)
+	go bot.dispatcher(&r.Header, endpoints)
 }
 
 func (bot *robot) Wait() {
@@ -76,7 +78,7 @@ func (bot *robot) Wait() {
 }
 
 func (bot *robot) dispatcher(h *http.Header, endpoints []string) {
-
+	defer bot.wg.Done()
 	lgr := logrus.NewEntry(logrus.StandardLogger()).WithFields(*bot.event.CollectLoggingFields())
 	for _, uri := range endpoints {
 
@@ -84,19 +86,15 @@ func (bot *robot) dispatcher(h *http.Header, endpoints []string) {
 		req.Header = *h
 		req.Body = bot.event.MetaPayload.Bytes()
 
-		bot.wg.Add(1)
-		go func(urlStr string) {
-			defer bot.wg.Done()
-			resp, err := req.Post(urlStr)
-			if err != nil {
-				lgr.Errorf("failed to send to %s , reason: %v", urlStr, err)
-				return
-			}
-			if resp != nil {
-				_, _ = io.Copy(io.Discard, resp.RawBody())
-			}
-			lgr.Infof("successful to send to %s ", urlStr)
-		}(uri)
+		resp, err := req.Post(uri)
+		if err != nil {
+			lgr.Errorf("failed to send to %s , reason: %v", uri, err)
+			return
+		}
+		if resp != nil {
+			_, _ = io.Copy(io.Discard, resp.RawBody())
+		}
+		lgr.Infof("successful to send to %s ", uri)
 	}
 
 }

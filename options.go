@@ -21,10 +21,9 @@ import (
 )
 
 type robotOptions struct {
-	service       options.ServiceOptions
-	handlePath    string
-	componentName string
-	shutdown      bool
+	service    options.ServiceOptions
+	handlePath string
+	shutdown   bool
 }
 
 func (o *robotOptions) gatherOptions(fs *flag.FlagSet, args ...string) *configuration {
