@@ -1,0 +1,21 @@
+access:
+  repo_plugins:
+    ibforuorg/test1: # 可以指定社区
+      - service-name1
+      - service-name2
+
+  plugins:
+    - name: service-name1
+      endpoint: http://localhost:7000/gitcode-hook
+      events:
+        - "Merge Request Hook"
+        - "Issue Hook"
+        - "Note Hook"
+        - "Push Hook"
+    - name: service-name2
+      endpoint: http://localhost:7000/gitcode-hook2
+      events:
+        - "Merge Request Hook"
+        - "Issue Hook"
+        - "Note Hook"
+        - "Push Hook"
