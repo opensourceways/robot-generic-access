@@ -36,9 +36,11 @@ func (o *robotOptions) gatherOptions(fs *flag.FlagSet, args ...string) *configur
 
 	_ = fs.Parse(args)
 
+	logrus.Error("config-file: " + o.service.ConfigFile)
 	if err := o.service.Validate(); err != nil {
 		logrus.Errorf("invalid service options, err:%s", err.Error())
 		o.shutdown = true
+		return nil
 	}
 	configmap := config.NewConfigmapAgent(&configuration{})
 	if err := configmap.Load(o.service.ConfigFile); err != nil {

@@ -22,5 +22,5 @@ USER robot
 
 COPY --chown=robot --from=BUILDER /opt/source/robot-universal-access /opt/app/robot-universal-access
 
-ENTRYPOINT /opt/app/robot-universal-access
+ENTRYPOINT /opt/app/robot-universal-access --port=8888 --handle-path=gitcode-hook --config-file=/vault/secrets/config
 
