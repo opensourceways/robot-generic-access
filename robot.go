@@ -16,6 +16,8 @@ package main
 import (
 	"github.com/go-resty/resty/v2"
 	"github.com/opensourceways/robot-framework-lib/client"
+	"github.com/opensourceways/robot-framework-lib/framework"
+	"github.com/opensourceways/robot-framework-lib/utils"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -30,35 +32,41 @@ const (
 )
 
 func newRobot(c *configuration) *robot {
-	return &robot{client: resty.New().RemoveProxy().SetRetryCount(3), configmap: c}
+	logger := framework.NewLogger().WithField("component", component)
+	return &robot{client: resty.New().RemoveProxy().SetRetryCount(3).SetLogger(logger), configmap: c, log: logger}
 }
 
 type robot struct {
 	client    *resty.Client
 	configmap *configuration
 	event     *client.GenericEvent
+	log       *logrus.Entry
 	wg        sync.WaitGroup
 }
 
 func (bot *robot) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	evt := client.NewGenericEvent(w, r)
-	if evt.EventType == nil || *evt.EventType == "" {
+	evt := client.NewGenericEvent(w, r, bot.log)
+	if utils.GetString(evt.EventType) == "" {
+		bot.log.Warning(missingEventTypeErrorMessage)
 		http.Error(w, missingEventTypeErrorMessage, http.StatusBadRequest)
 		return
 	}
 
-	if evt.MetaPayload == nil {
+	if evt.GetMetaPayload() == nil {
+		bot.log.Warning(noBodyErrorMessage)
 		http.Error(w, noBodyErrorMessage, http.StatusBadRequest)
 		return
 	}
 
-	if evt.Org == nil || *evt.Org == "" {
+	if utils.GetString(evt.Org) == "" {
+		bot.log.Warning(noOrgErrorMessage)
 		http.Error(w, noOrgErrorMessage, http.StatusBadRequest)
 		return
 	}
 
-	if evt.Repo == nil || *evt.Repo == "" {
+	if utils.GetString(evt.Repo) == "" {
+		bot.log.Warning(noRepoErrorMessage)
 		http.Error(w, noRepoErrorMessage, http.StatusBadRequest)
 		return
 	}
@@ -70,31 +78,32 @@ func (bot *robot) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bot.wg.Add(1)
+	r.Header.Set(client.HeaderRobotChain, client.HeaderRobotChainAuthed)
 	go bot.dispatcher(&r.Header, endpoints)
 }
 
-func (bot *robot) Wait() {
+func (bot *robot) wait() {
 	bot.wg.Wait() // Handle remaining requests
 }
 
 func (bot *robot) dispatcher(h *http.Header, endpoints []string) {
 	defer bot.wg.Done()
-	lgr := logrus.NewEntry(logrus.StandardLogger()).WithFields(*bot.event.CollectLoggingFields())
+	logger := bot.log.WithFields(*bot.event.CollectLoggingFields())
 	for _, uri := range endpoints {
 
 		req := bot.client.R()
 		req.Header = *h
-		req.Body = bot.event.MetaPayload.Bytes()
+		req.SetBody(bot.event)
 
 		resp, err := req.Post(uri)
 		if err != nil {
-			lgr.Errorf("failed to send to %s , reason: %v", uri, err)
+			logger.Errorf("failed to send to %s , reason: %v", uri, err)
 			return
 		}
 		if resp != nil {
 			_, _ = io.Copy(io.Discard, resp.RawBody())
 		}
-		lgr.Infof("successful to send to %s ", uri)
+		logger.Infof("successful to send to %s ", uri)
 	}
 
 }

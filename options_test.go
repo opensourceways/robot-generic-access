@@ -32,7 +32,7 @@ func TestGatherOptions(t *testing.T) {
 	opt := new(robotOptions)
 	_ = opt.gatherOptions(flag.NewFlagSet(args[0], flag.ExitOnError), args[1:]...)
 	assert.Equal(t, false, opt.shutdown)
-	assert.Equal(t, "webhook", opt.handlePath)
+	assert.Equal(t, "webhook", opt.service.HandlePath)
 	assert.Equal(t, 8511, opt.service.Port)
 
 	args = []string{
@@ -56,7 +56,7 @@ func TestGatherOptions(t *testing.T) {
 	opt = new(robotOptions)
 	got := opt.gatherOptions(flag.NewFlagSet(args[0], flag.ExitOnError), args[1:]...)
 	assert.Equal(t, false, opt.shutdown)
-	assert.Equal(t, "gitcode-hook", opt.handlePath)
+	assert.Equal(t, "gitcode-hook", opt.service.HandlePath)
 	want := &configuration{}
 	_ = utils.LoadFromYaml(findTestdata(t, "testdata"+string(os.PathSeparator)+"config.yaml"), want)
 	assert.Equal(t, *want, *got)
