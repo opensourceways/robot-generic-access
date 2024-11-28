@@ -16,33 +16,28 @@ package main
 import (
 	"flag"
 	"github.com/opensourceways/robot-framework-lib/config"
-	"github.com/opensourceways/server-common-lib/options"
 	"github.com/sirupsen/logrus"
 )
 
 type robotOptions struct {
-	service    options.ServiceOptions
-	handlePath string
-	shutdown   bool
+	service   config.FrameworkOptions
+	interrupt bool
 }
 
 func (o *robotOptions) gatherOptions(fs *flag.FlagSet, args ...string) *configuration {
 
-	o.service.AddFlags(fs)
-	fs.StringVar(
-		&o.handlePath, "handle-path", "webhook",
-		"http server handle's restapi path",
-	)
+	o.service.AddFlagsComposite(fs)
 
 	_ = fs.Parse(args)
 
-	if err := o.service.Validate(); err != nil {
-		logrus.Errorf("invalid service options, err:%s", err.Error())
-		o.shutdown = true
+	if err := o.service.ValidateComposite(); err != nil {
+		logrus.WithError(err).Error("invalid service startup arguments")
+		o.interrupt = true
+		return nil
 	}
-	configmap := config.NewConfigmapAgent(&configuration{})
-	if err := configmap.Load(o.service.ConfigFile); err != nil {
-		logrus.Errorf("load config, err:%s", err.Error())
+	configmap, err := config.NewConfigmapAgent(&configuration{}, o.service.ConfigFile)
+	if err != nil {
+		logrus.WithError(err).Error("invalid item exists in the configmap")
 		return nil
 	}
 

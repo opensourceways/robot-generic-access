@@ -15,10 +15,8 @@ package main
 
 import (
 	"flag"
-	"github.com/opensourceways/robot-framework-lib/config"
 	"github.com/opensourceways/robot-framework-lib/framework"
 	"github.com/opensourceways/server-common-lib/interrupts"
-	"github.com/opensourceways/server-common-lib/logrusutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -27,17 +25,15 @@ import (
 const component = "robot-universal-access"
 
 func main() {
-	logrusutil.ComponentInit(component)
-
 	opt := new(robotOptions)
 	cfg := opt.gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
-	if opt.shutdown {
+	if opt.interrupt {
 		return
 	}
 
 	bot := newRobot(cfg)
 	interrupts.OnInterrupt(func() {
-		bot.Wait()
+		bot.wait()
 	})
 
 	// Return 200 on / for health checks.
@@ -45,8 +41,8 @@ func main() {
 		w.WriteHeader(200)
 	})
 	// For /**-hook, handle a webhook normally.
-	http.Handle("/"+opt.handlePath, bot)
+	http.Handle("/"+opt.service.HandlePath, bot)
 	httpServer := &http.Server{Addr: ":" + strconv.Itoa(opt.service.Port)}
 
-	framework.StartupServer(httpServer, opt.service, config.ServerAdditionOptions{})
+	framework.StartupServer(httpServer, opt.service)
 }
