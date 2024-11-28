@@ -33,7 +33,11 @@ const (
 
 func newRobot(c *configuration) *robot {
 	logger := framework.NewLogger().WithField("component", component)
-	return &robot{client: resty.New().RemoveProxy().SetRetryCount(3).SetLogger(logger), configmap: c, log: logger}
+	return &robot{
+		client:    resty.New().RemoveProxy().SetRetryCount(2).SetLogger(logger.WithField("module", "resty")),
+		configmap: c,
+		log:       logger,
+	}
 }
 
 type robot struct {
@@ -70,10 +74,10 @@ func (bot *robot) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, noRepoErrorMessage, http.StatusBadRequest)
 		return
 	}
-
 	bot.event = evt
 	endpoints := bot.configmap.GetEndpoints(*evt.Org, *evt.Repo, *evt.EventType)
 	if len(endpoints) == 0 {
+		bot.log.WithField("request", "drop").Warning("there is no endpoint to dispatch this request")
 		return
 	}
 
@@ -97,13 +101,13 @@ func (bot *robot) dispatcher(h *http.Header, endpoints []string) {
 
 		resp, err := req.Post(uri)
 		if err != nil {
-			logger.Errorf("failed to send to %s , reason: %v", uri, err)
-			return
+			logger.WithError(err).Error("failed to send to " + uri)
+			continue
 		}
 		if resp != nil {
 			_, _ = io.Copy(io.Discard, resp.RawBody())
 		}
-		logger.Infof("successful to send to %s ", uri)
+		logger.Info("the request is successfully sent to URL[" + uri + "]")
 	}
 
 }

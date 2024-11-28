@@ -27,7 +27,7 @@ const component = "robot-universal-access"
 func main() {
 	opt := new(robotOptions)
 	cfg := opt.gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
-	if opt.shutdown {
+	if opt.interrupt {
 		return
 	}
 

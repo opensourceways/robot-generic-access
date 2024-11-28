@@ -20,8 +20,8 @@ import (
 )
 
 type robotOptions struct {
-	service  config.FrameworkOptions
-	shutdown bool
+	service   config.FrameworkOptions
+	interrupt bool
 }
 
 func (o *robotOptions) gatherOptions(fs *flag.FlagSet, args ...string) *configuration {
@@ -31,13 +31,13 @@ func (o *robotOptions) gatherOptions(fs *flag.FlagSet, args ...string) *configur
 	_ = fs.Parse(args)
 
 	if err := o.service.ValidateComposite(); err != nil {
-		logrus.Errorf("invalid service options, err:%s", err.Error())
-		o.shutdown = true
+		logrus.WithError(err).Error("invalid service startup arguments")
+		o.interrupt = true
 		return nil
 	}
 	configmap, err := config.NewConfigmapAgent(&configuration{}, o.service.ConfigFile)
 	if err != nil {
-		logrus.Errorf("load configmap, err:%s", err.Error())
+		logrus.WithError(err).Error("invalid item exists in the configmap")
 		return nil
 	}
 
