@@ -102,7 +102,7 @@ func TestValidate(t *testing.T) {
 			"case7",
 			args{
 				&configuration{},
-				"config.yaml",
+				configYaml,
 			},
 			[]error{nil, nil},
 		},
@@ -150,7 +150,7 @@ func TestGetEndpoints(t *testing.T) {
 			"case1",
 			args{
 				&configuration{},
-				"config.yaml",
+				configYaml,
 				"1",
 				"2",
 				"3",
@@ -161,7 +161,7 @@ func TestGetEndpoints(t *testing.T) {
 			"case2",
 			args{
 				&configuration{},
-				"config.yaml",
+				configYaml,
 				"ibforuorg",
 				"2",
 				"Note Hook",
@@ -194,7 +194,7 @@ func TestGetEndpoints(t *testing.T) {
 			"case5",
 			args{
 				&configuration{},
-				"config.yaml",
+				configYaml,
 				"ibforuorg",
 				"test1",
 				"Issue Hook",
