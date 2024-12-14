@@ -47,7 +47,7 @@ func TestDispatcherSuccess(t *testing.T) {
 	args := []string{
 		"***",
 		"--port=8511",
-		"--config-file=" + findTestdata(t, "testdata"+string(os.PathSeparator)+"config7.yaml"),
+		"--config-file=" + findTestdata(t, "config7.yaml"),
 		"--handle-path=gitcode-hook",
 	}
 
@@ -77,7 +77,7 @@ func TestDispatcherSuccess(t *testing.T) {
 		interrupts.ListenAndServe(server, time.Second)
 	}()
 	<-servChannel
-	data, _ := os.ReadFile(findTestdata(t, "testdata"+string(os.PathSeparator)+"pr_note.json"))
+	data, _ := os.ReadFile(findTestdata(t, "pr_note.json"))
 	buf := &bytes.Buffer{}
 	buf.Write(data)
 
@@ -101,7 +101,7 @@ func TestDispatcherFail(t *testing.T) {
 	args := []string{
 		"***",
 		"--port=8511",
-		"--config-file=" + findTestdata(t, "testdata"+string(os.PathSeparator)+"config8.yaml"),
+		"--config-file=" + findTestdata(t, "config8.yaml"),
 		"--handle-path=gitcode-hook",
 	}
 
@@ -109,7 +109,7 @@ func TestDispatcherFail(t *testing.T) {
 	cnf := opt.gatherOptions(flag.NewFlagSet(args[0], flag.ExitOnError), args[1:]...)
 	bot := newRobot(cnf)
 
-	data, _ := os.ReadFile(findTestdata(t, "testdata"+string(os.PathSeparator)+"pr_note.json"))
+	data, _ := os.ReadFile(findTestdata(t, "pr_note.json"))
 	buf := &bytes.Buffer{}
 	buf.Write(data)
 

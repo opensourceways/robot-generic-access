@@ -38,7 +38,10 @@ func main() {
 
 	// Return 200 on / for health checks.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		if r.URL.Path != "/" {
+			bot.log.Error("not a excepted url: " + r.URL.Path)
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	})
 	// For /**-hook, handle a webhook normally.
 	http.Handle("/"+opt.service.HandlePath, bot)

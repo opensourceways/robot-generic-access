@@ -110,7 +110,7 @@ func TestValidate(t *testing.T) {
 	for i := range testCases {
 		t.Run(testCases[i].no, func(t *testing.T) {
 			if testCases[i].in.path != "" {
-				err := utils.LoadFromYaml(findTestdata(t, "testdata"+string(os.PathSeparator)+testCases[i].in.path), testCases[i].in.cnf)
+				err := utils.LoadFromYaml(findTestdata(t, testCases[i].in.path), testCases[i].in.cnf)
 				assert.Equal(t, testCases[i].out[0], err)
 			}
 
@@ -205,7 +205,7 @@ func TestGetEndpoints(t *testing.T) {
 	for i := range testCases {
 		t.Run(testCases[i].no, func(t *testing.T) {
 			if testCases[i].in.path != "" {
-				_ = utils.LoadFromYaml(findTestdata(t, "testdata"+string(os.PathSeparator)+testCases[i].in.path), testCases[i].in.cnf)
+				_ = utils.LoadFromYaml(findTestdata(t, testCases[i].in.path), testCases[i].in.cnf)
 			}
 
 			endpoints := testCases[i].in.cnf.GetEndpoints(testCases[i].in.org, testCases[i].in.repo, testCases[i].in.eventType)
@@ -215,7 +215,7 @@ func TestGetEndpoints(t *testing.T) {
 }
 
 func findTestdata(t *testing.T, path string) string {
-
+	path = "testdata" + string(os.PathSeparator) + path
 	i := 0
 retry:
 	absPath, err := filepath.Abs(path)
