@@ -1,6 +1,4 @@
-FROM openeuler/openeuler:24.03-lts AS BUILDER
-RUN dnf -y install golang && \
-    dnf -y upgrade
+FROM golang:1.22.10 AS BUILDER
 
 ARG USER
 ARG PASS
