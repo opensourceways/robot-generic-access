@@ -17,47 +17,65 @@ import (
 	"flag"
 	"github.com/opensourceways/server-common-lib/utils"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
+)
+
+const (
+	commandPort             = "--port=8511"
+	commandExecFile         = "****"
+	commandConfigFilePrefix = "--config-file="
+	commandHandlePath       = "--handle-path=gitcode-hook"
+	configYaml              = "config.yaml"
 )
 
 func TestGatherOptions(t *testing.T) {
 
 	args := []string{
-		"***",
-		"--port=8511",
-		"--config-file=" + findTestdata(t, "testdata"+string(os.PathSeparator)+"config.yaml"),
+		commandExecFile,
+		commandPort,
+		commandConfigFilePrefix + findTestdata(t, configYaml),
 	}
 
 	opt := new(robotOptions)
 	_ = opt.gatherOptions(flag.NewFlagSet(args[0], flag.ExitOnError), args[1:]...)
-	assert.Equal(t, false, opt.shutdown)
-	assert.Equal(t, "webhook", opt.handlePath)
+	assert.Equal(t, false, opt.interrupt)
+	assert.Equal(t, "webhook", opt.service.HandlePath)
 	assert.Equal(t, 8511, opt.service.Port)
 
 	args = []string{
-		"***",
-		"--port=8511",
-		"--config-file=" + findTestdata(t, "testdata"+string(os.PathSeparator)+"config11.yaml"),
-		"--handle-path=gitcode-hook",
+		commandExecFile,
+		commandPort,
+		commandConfigFilePrefix + findTestdata(t, "config11.yaml"),
+		commandHandlePath,
 	}
 
 	opt = new(robotOptions)
 	_ = opt.gatherOptions(flag.NewFlagSet(args[0], flag.ExitOnError), args[1:]...)
-	assert.Equal(t, true, opt.shutdown)
+	assert.Equal(t, true, opt.interrupt)
 
 	args = []string{
-		"***",
-		"--port=8511",
-		"--config-file=" + findTestdata(t, "testdata"+string(os.PathSeparator)+"config.yaml"),
-		"--handle-path=gitcode-hook",
+		commandExecFile,
+		commandPort,
+		commandConfigFilePrefix + findTestdata(t, "config3.yaml"),
+		commandHandlePath,
+	}
+
+	opt = new(robotOptions)
+	_ = opt.gatherOptions(flag.NewFlagSet(args[0], flag.ExitOnError), args[1:]...)
+	assert.Equal(t, false, opt.interrupt)
+
+	args = []string{
+		commandExecFile,
+		commandPort,
+		commandConfigFilePrefix + findTestdata(t, configYaml),
+		commandHandlePath,
 	}
 
 	opt = new(robotOptions)
 	got := opt.gatherOptions(flag.NewFlagSet(args[0], flag.ExitOnError), args[1:]...)
-	assert.Equal(t, false, opt.shutdown)
-	assert.Equal(t, "gitcode-hook", opt.handlePath)
+	assert.Equal(t, false, opt.interrupt)
+	assert.Equal(t, "gitcode-hook", opt.service.HandlePath)
 	want := &configuration{}
-	_ = utils.LoadFromYaml(findTestdata(t, "testdata"+string(os.PathSeparator)+"config.yaml"), want)
+	_ = utils.LoadFromYaml(findTestdata(t, configYaml), want)
 	assert.Equal(t, *want, *got)
 }
